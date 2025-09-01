@@ -1,0 +1,16 @@
+
+# Node
+node_modules/
+dist/
+.vite/
+*.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
