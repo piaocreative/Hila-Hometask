@@ -6,7 +6,14 @@ using Server.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // TODO: optionally add Serilog or other logging
-
+builder.Services.AddCors(o => o.AddPolicy("dev", p => p
+    .WithOrigins(
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    )
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+));
 builder.Services.AddDbContext<AppDb>(o =>
     o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -17,6 +24,8 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseCors("dev");
 
 app.MapGet("/api/healthz", () => Results.Ok(new { status = "ok" }));
 
@@ -68,14 +77,14 @@ app.MapPut("/api/favorites/{breweryId}/note", async (AppDb db, string breweryId,
     fav.Note = dto.Note;
     fav.UpdatedUtc = DateTime.UtcNow;
     await db.SaveChangesAsync();
-    return Results.Ok();
+    return Results.Ok(new { note = fav.Note, updatedUtc = fav.UpdatedUtc });
 });
 
 // DELETE /api/favorites/{breweryId}
 app.MapDelete("/api/favorites/{breweryId}", async (AppDb db, string breweryId) =>
 {
     var fav = await db.Favorites.SingleOrDefaultAsync(f => f.BreweryId == breweryId);
-    if (fav is null) return Results.NoContent();
+    if (fav is null) return Results.NotFound();
     db.Favorites.Remove(fav);
     await db.SaveChangesAsync();
     return Results.NoContent();
